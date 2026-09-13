@@ -1,7 +1,7 @@
 const mineflayer = require('mineflayer');
 
 const bot = mineflayer.createBot({
-  host: 'http://sgp1.bytenut.cc/', // Example: myserver.bytenut.net
+  host:'sgp1.bytenut.cc', // Example: myserver.bytenut.net
   port: 6280, 
   username: 'AFK_Bypass_Bot',
   version: '1.20.1' // Match this to your server version
