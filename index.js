@@ -11,25 +11,39 @@ server.listen(PORT, () => {
   console.log(`Dummy web server listening on port ${PORT}`);
 });
 
-// 2. Minecraft Bot Configuration
+// 2. Realistic Minecraft Bot Client Configuration
 const bot = mineflayer.createBot({
   host: 'sgp1.bytenut.cc', 
   port: 6280,             
   username: 'AFK_Bypass_Bot',
-  version: '1.21.11' 
+  version: '1.21.11',
+  
+  // These settings mimic a standard vanilla Minecraft player client profile
+  viewDistance: 'normal',
+  chatStars: true,
+  colorsEnabled: true,
+  skinParts: {
+    cape: true,
+    jacket: true,
+    leftSleeve: true,
+    rightSleeve: true,
+    leftPants: true,
+    rightPants: true,
+    hat: true
+  },
+  // Stops the bot from sending too many internal system packets at once
+  checkTimeoutInterval: 30000 
 });
 
-// Track if we have already sent the login command during this spawn session
 let authenticationSent = false;
 
 bot.on('spawn', () => {
   console.log("Bot successfully joined ByteNut server!");
-  authenticationSent = false; // Reset when spawned cleanly
+  authenticationSent = false; 
 });
 
-// 3. System chat listener (Strictly ignores player chat to prevent infinite loops)
+// 3. System chat listener for Login / Registration
 bot.on('message', (jsonMsg, position) => {
-  // position 'system' or 'game_info' represents the server itself
   if (position === 'member_defined' || position === 'player') return; 
 
   const message = jsonMsg.toString().trim();
@@ -53,20 +67,17 @@ bot.on('message', (jsonMsg, position) => {
   }
 });
 
-// 4. Robust Bossbar Extraction
+// 4. Bossbar Extraction Logic
 bot.on('bossbarCreated', (bossbar) => { handleBossbar(bossbar); });
 bot.on('bossbarUpdated', (bossbar) => { handleBossbar(bossbar); });
 
 function handleBossbar(bossbar) {
-  // mineflayer bossbars contain a custom chat component text structure. 
-  // We extract the plain string text directly.
   if (!bossbar.title) return;
   
   const text = bossbar.title.toString().trim();
   console.log(`[Bossbar Checked]: ${text}`);
 
   if (text.toLowerCase().includes('enter code')) {
-    // Regex targets the 5-6 alphanumeric code right after the word 'code'
     const regex = /code\s+([a-z0-9]{5,6})/i;
     const match = text.match(regex);
 
@@ -82,7 +93,6 @@ function handleBossbar(bossbar) {
   }
 }
 
-// Graceful error Handling to prevent Render process crashes
 bot.on('error', (err) => {
   console.error(`Socket connection error encountered: ${err.message}`);
 });
