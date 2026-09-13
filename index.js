@@ -19,23 +19,32 @@ const bot = mineflayer.createBot({
   version: '1.21.11' 
 });
 
-// 3. Event: Automatically Register/Login when joining the server
 bot.on('spawn', () => {
   console.log("Bot successfully joined ByteNut server!");
-  
-  // Wait 2 seconds after spawning, then type the register command
-  // You can change 'BotPassword123' to whatever password you want the bot to use
-  setTimeout(() => {
-    bot.chat('/register BotPassword123 BotPassword123');
-    console.log("Sent registration command to the server.");
-  }, 2000);
 });
 
-// 4. Event: Listen to chat for the anti-AFK verification code
+// 3. Event: Listen to chat for Login, Registration, and AFK Captchas
 bot.on('message', (jsonMsg) => {
   const message = jsonMsg.toString().trim();
   console.log(`[Server Chat]: ${message}`);
 
+  // A. Handle Registration (First time joining)
+  if (message.toLowerCase().includes('please register') || message.toLowerCase().includes('/register')) {
+    setTimeout(() => {
+      bot.chat('/register BotPassword123 BotPassword123');
+      console.log("Sent registration command.");
+    }, 2000);
+  }
+
+  // B. Handle Login (Every time after the first join)
+  if (message.toLowerCase().includes('please login') || message.toLowerCase().includes('/login')) {
+    setTimeout(() => {
+      bot.chat('/login BotPassword123');
+      console.log("Sent login command.");
+    }, 2000);
+  }
+
+  // C. Handle Anti-AFK Verification Captcha
   if (message.toLowerCase().includes('code') || message.toLowerCase().includes('verify')) {
     const regex = /\b[A-Za-z0-9]{4,8}\b/;
     const match = message.match(regex);
