@@ -4,7 +4,7 @@ const http = require('http');
 // 1. Dummy web server for Render Free Tier
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Bot is running safely!\n');
+  res.end('Bot running with heavy clean regex and non-stop movement!\n');
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
@@ -25,39 +25,37 @@ const bot = mineflayer.createBot({
 });
 
 let authenticationSent = false;
-let antiAfkInterval = null;
+let movementInterval = null;
 
 bot.on('spawn', () => {
   console.log("Bot successfully joined ByteNut server!");
   authenticationSent = false; 
-  
-  // Clear any old moving loops if the bot re-spawns
-  if (antiAfkInterval) clearInterval(antiAfkInterval);
 
-  // Start the Anti-AFK activity loop every 15 seconds
-  antiAfkInterval = setInterval(() => {
+  // Make the bot CONSTANTLY jump non-stop
+  bot.setControlState('jump', true);
+
+  // Clear old movement intervals if respawning
+  if (movementInterval) clearInterval(movementInterval);
+
+  // Non-stop movement loop: changes walking directions constantly every 2 seconds
+  movementInterval = setInterval(() => {
     if (!bot || !bot.entity) return;
 
-    console.log("Performing automated anti-AFK movement actions...");
+    // Pick a completely random movement pattern
+    const moves = ['forward', 'back', 'left', 'right'];
+    const activeMove = moves[Math.floor(Math.random() * moves.length)];
     
-    // 1. Try to switch out of spectator mode in case it has permissions
-    bot.chat('/gamemode survival');
+    // Reset all directions first
+    moves.forEach(m => bot.setControlState(m, false));
+    
+    // Enable the random direction
+    bot.setControlState(activeMove, true);
 
-    // 2. Force the bot to rotate its head to a random angle to simulate activity
+    // Make the bot look around constantly
     const randomYaw = (Math.random() * 360 - 180) * (Math.PI / 180);
-    const randomPitch = (Math.random() * 90 - 45) * (Math.PI / 180);
-    bot.look(randomYaw, randomPitch, true);
-
-    // 3. Make the bot swing its main arm
+    bot.look(randomYaw, 0, true);
     bot.swingArm('right');
-
-    // 4. Force a tiny jump packet (Only works if the server changes its mode out of spectator)
-    bot.setControlState('jump', true);
-    setTimeout(() => {
-      if (bot) bot.setControlState('jump', false);
-    }, 500);
-
-  }, 15000); 
+  }, 2000);
 });
 
 // 3. System chat listener for Login / Registration
@@ -83,35 +81,43 @@ bot.on('message', (jsonMsg, position) => {
   }
 });
 
-// 4. Bossbar Extraction Logic
+// 4. Heavy-Duty Fail-Safe Bossbar Extraction Logic
 bot.on('bossbarCreated', (bossbar) => { handleBossbar(bossbar); });
 bot.on('bossbarUpdated', (bossbar) => { handleBossbar(bossbar); });
 
 function handleBossbar(bossbar) {
   if (!bossbar.title) return;
   
-  let text = "";
-  try {
-    const rawTitle = JSON.parse(bossbar.title);
-    text = bot.chat.toPlainString(rawTitle).trim();
-  } catch (e) {
-    text = bossbar.title.toString().trim();
-  }
+  // Turn whatever data object the bossbar is into a raw string
+  let rawText = String(bossbar.title);
 
-  console.log(`[Bossbar Checked]: ${text}`);
+  // HEAVY CLEAN FILTER: Strips away formatting codes (§), JSON formatting ({"text":}), 
+  // brackets, quotation marks, and slashes, leaving ONLY plain numbers and letters.
+  let cleanText = rawText
+    .replace(/§[0-9a-fk-or]/gi, '') // Removes Minecraft color codes
+    .replace(/[{}":\[\]\\]/g, ' ') // Blanks out JSON syntax characters
+    .replace(/\s+/g, ' ')          // Cleans up messy duplicate spaces
+    .trim();
 
-  if (text.toLowerCase().includes('enter code')) {
+  console.log(`[Raw Data Cleaned]: ${cleanText}`);
+
+  // Checks if our newly flattened text contains the activation phrase
+  if (cleanText.toLowerCase().includes('enter code')) {
+    
+    // Search the text for any isolated 4-7 character word containing letters/numbers
+    // mapping directly after the word "code"
     const regex = /code\s+([a-z0-9]{4,7})/i;
-    const match = text.match(regex);
+    const match = cleanText.match(regex);
 
-    if (match && match) {
-      const captchaCode = match;
-      console.log(`Matched Captcha Code: ${captchaCode}`);
+    if (match && match[1]) {
+      const captchaCode = match[1];
+      console.log(`Bypass Target Isolated: ${captchaCode}`);
 
+      // Respond after a human-like 3 second delay
       setTimeout(() => {
         bot.chat(captchaCode);
-        console.log(`Submitted Captcha Answer: ${captchaCode}`);
-      }, 3500);
+        console.log(`Successfully typed "${captchaCode}" into the server chat.`);
+      }, 3000);
     }
   }
 }
@@ -121,7 +127,7 @@ bot.on('error', (err) => {
 });
 
 bot.on('end', (reason) => {
-  console.log(`Disconnected from server (${reason}). Reconnecting execution engine...`);
-  if (antiAfkInterval) clearInterval(antiAfkInterval);
+  console.log(`Disconnected from server (${reason}). Reconnecting...`);
+  if (movementInterval) clearInterval(movementInterval);
   setTimeout(() => process.exit(1), 15000); 
 });
