@@ -1,14 +1,19 @@
 const mineflayer = require('mineflayer');
 const http = require('http');
 
-// 1. Dummy Web Server for Render
+// 1. Dummy Web Server for Render & UptimeRobot Pings
 const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Minecraft AFK Engine Active\n');
+  if (req.url === '/ping' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot is alive!\n');
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found\n');
+  }
 });
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
-  console.log(`Dummy server running on port ${PORT}`);
+  console.log(`Pinger server active and running on port ${PORT}`);
 });
 
 // 2. Client Parameters Configuration
